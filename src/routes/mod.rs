@@ -7,14 +7,24 @@ mod my_route;
 
 mod invoice;
 use self::invoice::{create_invoice, get_invoice};
+use tower_http::cors::{CorsLayer, Any};
+use axum::http::{Request, Response, Method, header};
+
 
 pub fn create_routes() -> Router {
+    let cors = CorsLayer::new()
+    .allow_methods([Method::GET, Method::POST])
+    .allow_origin(Any);
+
+
+
     Router::new()
     .route("/rnd", get(handler))
     .route("/", get(root_path))
     .route("/hey", get(route1))
     .route("/invoice", post(create_invoice))
     .route("/invoice/:id", get(get_invoice))
+    .layer(cors) // affect allroutes above
 }
 
 // `Deserialize` need be implemented to use with `Query` extractor.

@@ -1,4 +1,4 @@
-use axum::{Json, extract::{Path, Query}, http::{HeaderMap, header::USER_AGENT}};
+use axum::{Json, extract::{Path, Query}, http::{HeaderMap, header::USER_AGENT, StatusCode}, response::{IntoResponse, Response}};
 use serde::{Serialize, Deserialize};
 
 pub async fn create_invoice(Json(body): Json<Invoice>) -> Json<Invoice> {
@@ -10,7 +10,7 @@ pub async fn get_invoice(
     Path(id): Path<u32>,
     Query(params): Query<QueryParams>,
     headers: HeaderMap
-) -> Json<Invoice> {
+) -> Response {
     let user_agent = headers.get(USER_AGENT);
     let agent_str = user_agent.unwrap();
     println!("{:?}", agent_str);
@@ -30,14 +30,24 @@ pub async fn get_invoice(
             Some(value) => value,
             None => 0,
         },
-        };
-    Json(invoice)
+    };
+    if invoice.filter == "sek".to_owned() {
+        return (
+            StatusCode::CREATED,
+            Json(invoice),
+        ).into_response()
+    } 
+    return (StatusCode::UNPROCESSABLE_ENTITY, Json(ErrorMessage {message: "its bad".to_owned()})).into_response();    
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ErrorMessage {
+    pub message: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Invoice {
     /// Need to be smaller number
     amount: u16,
-    currency: String,
+    pub currency: String,
     id: u32,
     filter: String,
     start: u32,
